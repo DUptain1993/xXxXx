@@ -22,25 +22,25 @@ jobs:
     - name: Restore dependencies
       run: dotnet restore PloutusRebuilder.fsproj -r win-x86
 
-    - name: Build Rebuilder (win-x86)
-      run: dotnet build PloutusRebuilder.fsproj -c Release -r win-x86 --no-restore
+    - name: Publish Rebuilder (win-x86)
+      run: dotnet publish PloutusRebuilder.fsproj -c Release -r win-x86 --no-restore -o publish
 
     - name: Run Rebuilder
       shell: cmd
       run: |
         set SAMPLE_NAME=PloutusD_d93342bd12ef44d92bf58ed2f0f88443385a0192804a5d0976352484c0d37685.exe
         
-        rem The build output is in bin\x86\Release\net8.0-windows\win-x86
-        cd bin\x86\Release\net8.0-windows\win-x86
+        rem Move to the publish directory
+        cd publish
         
-        rem Copy the malware sample to the output directory
-        copy "..\..\..\..\..\%SAMPLE_NAME%" .
+        rem Copy the malware sample to the publish directory
+        copy "..\%SAMPLE_NAME%" .
         
-        rem Run the rebuilder (this runs as a 32-bit process because of the win-x86 runtime)
+        rem Run the rebuilder (this runs as a 32-bit process)
         PloutusRebuilder.exe
         
         rem Copy the result back to the root
-        copy "%SAMPLE_NAME%_rebuilt" "..\..\..\..\..\PloutusD_rebuilt.exe"
+        copy "%SAMPLE_NAME%_rebuilt" "..\PloutusD_rebuilt.exe"
 
     - name: Upload Rebuilt Binary
       uses: actions/upload-artifact@v4
