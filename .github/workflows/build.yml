@@ -1,0 +1,48 @@
+name: Build and Rebuild Ploutus
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+    - uses: actions/checkout@v4
+
+    - name: Setup MSBuild
+      uses: microsoft/setup-msbuild@v2
+
+    - name: Setup NuGet
+      uses: NuGet/setup-nuget@v2
+
+    - name: Restore NuGet packages
+      run: nuget restore PloutusRebuilder.fsproj
+
+    - name: Build Rebuilder (x86)
+      run: msbuild PloutusRebuilder.fsproj /p:Configuration=Release /p:Platform=x86
+
+    - name: Run Rebuilder
+      shell: cmd
+      run: |
+        rem Move to the output directory
+        cd bin\x86\Release\net472
+        
+        rem Copy the malware sample to the output directory so the rebuilder can find it
+        copy "..\..\..\PloutusD_d93342bd12ef44d92bf58ed2f0f88443385a0192804a5d0976352484c0d37685.exe" .
+        
+        rem Run the rebuilder
+        PloutusRebuilder.exe
+        
+        rem Copy the result back to the root for easier artifact upload
+        copy "PloutusD_d93342bd12ef44d92bf58ed2f0f88443385a0192804a5d0976352484c0d37685.exe_rebuilt" "..\..\..\PloutusD_rebuilt.exe"
+
+    - name: Upload Rebuilt Binary
+      uses: actions/upload-artifact@v4
+      with:
+        name: Ploutus-Rebuilt
+        path: PloutusD_rebuilt.exe
