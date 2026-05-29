@@ -14,32 +14,33 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    - name: Setup MSBuild
-      uses: microsoft/setup-msbuild@v2
+    - name: Setup .NET
+      uses: actions/setup-dotnet@v4
+      with:
+        dotnet-version: '8.0.x'
 
-    - name: Setup NuGet
-      uses: NuGet/setup-nuget@v2
+    - name: Restore dependencies
+      run: dotnet restore PloutusRebuilder.fsproj -r win-x86
 
-    - name: Restore NuGet packages
-      run: nuget restore PloutusRebuilder.fsproj
-
-    - name: Build Rebuilder (x86)
-      run: msbuild PloutusRebuilder.fsproj /p:Configuration=Release /p:Platform=x86
+    - name: Build Rebuilder (win-x86)
+      run: dotnet build PloutusRebuilder.fsproj -c Release -r win-x86 --no-restore
 
     - name: Run Rebuilder
       shell: cmd
       run: |
-        rem Move to the output directory
-        cd bin\x86\Release\net472
+        set SAMPLE_NAME=PloutusD_d93342bd12ef44d92bf58ed2f0f88443385a0192804a5d0976352484c0d37685.exe
         
-        rem Copy the malware sample to the output directory so the rebuilder can find it
-        copy "..\..\..\PloutusD_d93342bd12ef44d92bf58ed2f0f88443385a0192804a5d0976352484c0d37685.exe" .
+        rem The build output is in bin\x86\Release\net8.0-windows\win-x86
+        cd bin\x86\Release\net8.0-windows\win-x86
         
-        rem Run the rebuilder
+        rem Copy the malware sample to the output directory
+        copy "..\..\..\..\..\%SAMPLE_NAME%" .
+        
+        rem Run the rebuilder (this runs as a 32-bit process because of the win-x86 runtime)
         PloutusRebuilder.exe
         
-        rem Copy the result back to the root for easier artifact upload
-        copy "PloutusD_d93342bd12ef44d92bf58ed2f0f88443385a0192804a5d0976352484c0d37685.exe_rebuilt" "..\..\..\PloutusD_rebuilt.exe"
+        rem Copy the result back to the root
+        copy "%SAMPLE_NAME%_rebuilt" "..\..\..\..\..\PloutusD_rebuilt.exe"
 
     - name: Upload Rebuilt Binary
       uses: actions/upload-artifact@v4

@@ -1,4 +1,7 @@
+module PloutusRebuilder
+
 open System
+open System.IO
 open System.Linq
 open System.Reflection
 open System.Runtime.CompilerServices
@@ -41,7 +44,8 @@ let getAssemblyBaseAddress(assembly: Assembly) =
     
 [<EntryPoint>]
 let main argv = 
-    let fullPath = @"PloutusD_d93342bd12ef44d92bf58ed2f0f88443385a0192804a5d0976352484c0d37685.exe"
+    let fileName = @"PloutusD_d93342bd12ef44d92bf58ed2f0f88443385a0192804a5d0976352484c0d37685.exe"
+    let fullPath = Path.GetFullPath(fileName)
     let assembly = Assembly.LoadFile(fullPath)
 
     // run all static constructor to fill the protection dictionary containing the real MSIL bytecode
@@ -77,5 +81,6 @@ let main argv =
     )
 
     // finally write back the new assembly
-    dnModule.Write(fullPath + "_rebuilt")
+    let outputPath = Path.Combine(Path.GetDirectoryName(fullPath), Path.GetFileName(fullPath) + "_rebuilt")
+    dnModule.Write(outputPath)
     0
